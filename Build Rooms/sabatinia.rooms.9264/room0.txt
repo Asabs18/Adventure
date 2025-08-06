@@ -1,0 +1,8 @@
+ROOM NAME : Pennsylvania
+CONNECTION 1 : New York
+CONNECTION 2 : California
+CONNECTION 3 : Nevada
+CONNECTION 4 : Colorado
+CONNECTION 5 : Arizona
+CONNECTION 6 : Florida
+ROOM TYPE : START_ROOM

@@ -1,0 +1,7 @@
+ROOM NAME : Nevada
+CONNECTION 1 : Pennsylvania
+CONNECTION 2 : New York
+CONNECTION 3 : Colorado
+CONNECTION 4 : Arizona
+CONNECTION 5 : Florida
+ROOM TYPE : MID_ROOM
