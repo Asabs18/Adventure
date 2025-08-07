@@ -49,18 +49,41 @@ static void DrawEnhancedRoom(float x, float y, Color color, const char* name, bo
     DrawText(name, x - tw/2, y - 8, fontSize, RAYWHITE);       // Text
 }
 
-// Arrange rooms in a circle
-static void layout_rooms(Vec2* positions, int count, float cx, float cy, float radius) {
-    for (int i = 0; i < count; ++i) {
-        float angle = 2 * PI * i / count;
-        positions[i].x = cx + radius * cosf(angle);
-        positions[i].y = cy + radius * sinf(angle);
+// Scale positions to fit current screen
+static void scale_positions_to_screen(Room* rooms, int count, Vec2* positions, int screenWidth, int screenHeight) {
+    // Find bounds of current layout
+    float min_x = rooms[0].x, max_x = rooms[0].x;
+    float min_y = rooms[0].y, max_y = rooms[0].y;
+    
+    for (int i = 1; i < count; i++) {
+        if (rooms[i].x < min_x) min_x = rooms[i].x;
+        if (rooms[i].x > max_x) max_x = rooms[i].x;
+        if (rooms[i].y < min_y) min_y = rooms[i].y;
+        if (rooms[i].y > max_y) max_y = rooms[i].y;
+    }
+    
+    float layout_width = max_x - min_x;
+    float layout_height = max_y - min_y;
+    
+    // Calculate scaling to fit screen with margins
+    float margin = 100.0f;
+    float available_width = screenWidth - 2 * margin;
+    float available_height = screenHeight - 2 * margin;
+    
+    float scale_x = (layout_width > 0) ? available_width / layout_width : 1.0f;
+    float scale_y = (layout_height > 0) ? available_height / layout_height : 1.0f;
+    float scale = (scale_x < scale_y) ? scale_x : scale_y;
+    
+    // Apply scaling and centering
+    for (int i = 0; i < count; i++) {
+        positions[i].x = margin + (rooms[i].x - min_x) * scale + (available_width - layout_width * scale) / 2;
+        positions[i].y = margin + (rooms[i].y - min_y) * scale + (available_height - layout_height * scale) / 2;
     }
 }
 
-static void reset_game(Room* rooms, int count, Room** current, Room** end_room, Room* path[], int* steps, int* won, int* found_star, char* event_msg) {
+static void reset_game(Room* rooms, int max_count, int* count, Room** current, Room** end_room, Room* path[], int* steps, int* won, int* found_star, char* event_msg) {
     // Regenerate rooms
-    generate_rooms(rooms, count);
+    *count = generate_rooms(rooms, max_count);
     
     // Reset all game state
     *current = NULL;
@@ -71,7 +94,7 @@ static void reset_game(Room* rooms, int count, Room** current, Room** end_room, 
     event_msg[0] = 0;
     
     // Find start room
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < *count; i++) {
         if (rooms[i].type == START_ROOM) {
             *current = &rooms[i];
             break;
@@ -79,7 +102,7 @@ static void reset_game(Room* rooms, int count, Room** current, Room** end_room, 
     }
     
     // Find end room
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < *count; i++) {
         if (rooms[i].type == END_ROOM) {
             *end_room = &rooms[i];
             break;
@@ -90,13 +113,14 @@ static void reset_game(Room* rooms, int count, Room** current, Room** end_room, 
     if (*current) (*current)->visited = 1;
 }
 
-void play_game_gui(Room* rooms, int count) {
+void play_game_gui(Room* rooms, int initial_count) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);  // Make window resizable
     InitWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, "Adventure Game (GUI)");
     SetTargetFPS(60);
     SetWindowMinSize(MIN_WIDTH, MIN_HEIGHT);
 
-    Vec2 positions[16];
+    Vec2 positions[12];  // Use fixed size instead of MAX_ROOMS
+    int count = initial_count;
 
     Room* current = NULL;
     for (int i = 0; i < count; ++i) {
@@ -125,8 +149,7 @@ void play_game_gui(Room* rooms, int count) {
         // Update room layout if window is resized
         int screenWidth = GetScreenWidth();
         int screenHeight = GetScreenHeight();
-        float layoutRadius = fminf(screenWidth, screenHeight) * 0.3f;  // Dynamic radius based on screen size
-        layout_rooms(positions, count, screenWidth/2, screenHeight/2, layoutRadius);
+        scale_positions_to_screen(rooms, count, positions, screenWidth, screenHeight);
 
         BeginDrawing();
         ClearBackground(COLOR_BG);
@@ -203,6 +226,12 @@ void play_game_gui(Room* rooms, int count) {
         DrawRectangle(padding, padding, MeasureText(stepstr, 20) + 20, 30, Fade(BLACK, 0.5f));
         DrawText(stepstr, padding + 10, padding + 5, 20, RAYWHITE);
 
+        // Show room count
+        char roomstr[64];
+        snprintf(roomstr, sizeof(roomstr), "Rooms: %d", count);
+        DrawRectangle(padding, padding + 40, MeasureText(roomstr, 20) + 20, 30, Fade(BLACK, 0.5f));
+        DrawText(roomstr, padding + 10, padding + 45, 20, RAYWHITE);
+
         // Draw event message
         if (event_msg[0]) {
             // Draw event message with background panel
@@ -251,7 +280,7 @@ void play_game_gui(Room* rooms, int count) {
         if (won) {
             if (IsKeyPressed(KEY_R)) {
                 // Reset the game
-                reset_game(rooms, count, &current, &end_room, path, &steps, &won, &found_star, event_msg);
+                reset_game(rooms, MAX_ROOMS, &count, &current, &end_room, path, &steps, &won, &found_star, event_msg);
             }
             continue;
         }

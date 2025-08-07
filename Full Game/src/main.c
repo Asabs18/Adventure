@@ -6,15 +6,13 @@
 #include "game.h"
 #include "gui.h"
 
-#define ROOM_COUNT 7
-
 int main() {
-    Room rooms[ROOM_COUNT];
+    Room rooms[MAX_ROOMS];
     
-    generate_rooms(rooms, ROOM_COUNT);
-    printf("Rooms generated!\n");
+    int room_count = generate_rooms(rooms, MAX_ROOMS);
+    printf("Generated %d rooms!\n", room_count);
 
-    play_game_gui(rooms, ROOM_COUNT);
+    play_game_gui(rooms, room_count);
 
     return 0;
 }

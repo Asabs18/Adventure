@@ -26,3 +26,8 @@ room_t rooms[USED_ROOMS];
 
 bool printRoom(const room_t room, const room_t rooms[]);
 bool printRooms(const room_t rooms[], size_t size);
+void generateRandomRooms(room_t rooms[], size_t numRooms);
+bool isConnected(const room_t room1, const room_t room2);
+void addConnection(room_t* room1, room_t* room2);
+void ensureConnectivity(room_t rooms[], size_t numRooms);
+void dfs(room_t rooms[], size_t index, bool visited[], size_t numRooms);
